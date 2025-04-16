@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>天気予報</title>
+    <style>
+      .button-container {
+        margin-bottom: 20px;
+      }
+      .toggle-button {
+        padding: 8px 15px;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+
+      .city-selector {
+        margin-bottom: 20px;
+      }
+
+      /* 3時間ごとの表示スタイル */
+      #hourly-forecast-container h2 {
+        margin-bottom: 10px;
+      }
+      .hourly-forecast {
+        display: flex;
+        overflow-x: auto; /* 横スクロール可能にする */
+        margin-bottom: 20px;
+      }
+      .hourly-item {
+        padding: 10px 15px;
+        border-right: 1px solid #eee;
+        text-align: center;
+        white-space: nowrap; /* アイテムが折り返されないように */
+      }
+      .hourly-item:last-child {
+        border-right: none;
+      }
+      .hourly-item .time {
+        font-size: 0.9em;
+        margin-bottom: 5px;
+      }
+      .hourly-item .weather-icon img {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 5px;
+      }
+      .hourly-item .pop {
+        font-size: 0.8em;
+        color: #555;
+        margin-bottom: 5px;
+      }
+      .hourly-item .rain {
+        font-size: 0.8em;
+        color: #3498db;
+        margin-bottom: 5px;
+      }
+      .hourly-item .temp {
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .hourly-item .wind {
+        font-size: 0.8em;
+        color: #777;
+      }
+      .hourly-item .wind-arrow {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 0.5em solid transparent;
+        border-right: 0.5em solid transparent;
+        border-bottom: 0.7em solid #777;
+        transform-origin: center bottom;
+        margin-right: 5px;
+      }
+
+      /* 一日ごとの表示スタイル */
+      #daily-forecast-container h2 {
+        margin-bottom: 10px;
+      }
+      .daily-forecast {
+        display: flex; /* ここを追加 */
+        overflow-x: auto; /* 横スクロール可能にする (必要に応じて) */
+      }
+      .daily-item {
+        padding: 10px 15px;
+        border-right: 1px solid #eee;
+        text-align: center;
+        white-space: nowrap;
+      }
+      .daily-item:last-child {
+        border-right: none;
+      }
+      .daily-item .date {
+        font-size: 1em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .daily-item .weather-icon img {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 5px;
+      }
+      .daily-item .temp {
+        font-size: 0.9em;
+        margin-bottom: 5px;
+      }
+      .daily-item .high {
+        color: #e74c3c;
+        font-weight: bold;
+      }
+      .daily-item .low {
+        color: #3498db;
+        font-weight: bold;
+      }
+      .daily-item .pop {
+        font-size: 0.8em;
+        color: #555;
+      }
+
+      #date-select {
+        margin-top: 40px;
+      }
+
+      .suggestion-container {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{ current_city }}の天気予報</h1>
+    <div class="city-selector">
+      <label for="city-select">都市を選択:</label>
+      <select id="city-select" onchange="changeCity()">
+          <option value="Fukuoka,JP" {% if current_city == '福岡' %}selected{% endif %}>福岡</option>
+          <option value="Tokyo,JP" {% if current_city == '東京' %}selected{% endif %}>東京</option>
+          <option value="Osaka,JP" {% if current_city == '大阪' %}selected{% endif %}>大阪</option>
+          <option value="Nagoya,JP" {% if current_city == '名古屋' %}selected{% endif %}>名古屋</option>
+          <option value="Sapporo,JP" {% if current_city == '札幌' %}selected{% endif %}>札幌</option>
+      </select>
+  </div>
+
+    <div class="button-container">
+      <button class="toggle-button" onclick="showHourly()">3時間ごと</button>
+      <button class="toggle-button" onclick="showDaily()">一日ごと</button>
+    </div>
+
+    
+
+    <div id="hourly-forecast-container">
+      <h2>3時間ごとの天気予報</h2>
+      <div class="hourly-forecast">
+        {% for item in three_hourly_forecast_data %}
+        <div class="hourly-item">
+          <div class="time">{{ item.time }}時</div>
+          <div class="weekday">({{ item.weekday }})</div>
+          <div class="weather-icon">
+            <img
+              src="http://openweathermap.org/img/wn/{{ item.icon_id }}.png"
+              alt="{{ item.description }}"
+            />
+          </div>
+          <div class="pop">降水確率 {{ item['pop'] }}%</div>
+          <div class="rain">降水量 {{ item.rain }} mm</div>
+          <div class="temp">{{ item.temp }}℃</div>
+          <div class="wind">風速<br>
+            {% if item.wind_deg is not none %}
+            <span
+              class="wind-arrow"
+              style="transform: rotate({{ item.wind_deg }}deg);"
+            ></span>
+            {% endif %} {{ item.wind_speed }} m/s
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="daily-forecast-container" style="display: none">
+      <h2>一日ごとの天気予報</h2>
+      <div class="daily-forecast">
+        {% if daily_forecast_data %} {% for day_item in daily_forecast_data %}
+        <div class="daily-item">
+          <div class="date">{{ day_item.date }} ({{ day_item.weekday}})</div>
+          <div class="weather-icon">
+            <img
+              src="http://openweathermap.org/img/wn/{{ day_item.icon_id }}.png"
+              alt="{{ day_item.description }}"
+            />
+          </div>
+          <div class="temp">
+              <span class="high">最高{{ day_item.max_temp }}℃</span> /
+              <span class="low">最低{{ day_item.min_temp }}℃</span>
+          </div>
+          <div class="pop">降水確率 {{ day_item['pop'] }}%</div>
+        </div>
+        {% endfor %} {% else %}
+        <p>一日ごとの天気予報のデータを取得できませんでした。</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <label for="date-select">日付を選択:</label>
+    <select id="date-select" onchange="updateSuggestion()">
+      {% for day_item in daily_forecast_data %}
+      <option value="{{ day_item.date }}">{{ day_item.date }} ({{ day_item.weekday}})</option>
+      {% endfor %}
+    </select>
+
+    <div id="suggestion-container" class="suggestion-container">
+      <h2>おすすめの服装</h2>
+      <p id="clothing-suggestion">
+        日付を選択するとおすすめの服装が表示されます。
+      </p>
+    </div>
+
+    <script>
+      let currentCity = 'Fukuoka,JP'; // 初期都市
+
+      function showHourly() {
+        document.getElementById('hourly-forecast-container').style.display =
+          'block';
+        document.getElementById('daily-forecast-container').style.display =
+          'none';
+      }
+
+      function showDaily() {
+        document.getElementById('hourly-forecast-container').style.display =
+          'none';
+        document.getElementById('daily-forecast-container').style.display =
+          'block';
+      }
+
+      function updateSuggestion() {
+        const selectedDateMD = document.getElementById('date-select').value; // MM/DD 形式
+        const currentCity = document.getElementById('city-select').value;
+        if (selectedDateMD) {
+          const year = new Date().getFullYear(); // 現在の年を取得
+          const [month, day] = selectedDateMD.split('/');
+          const selectedDateYYYYMMDD = `${year}-${month.padStart(2,'0')}-${day.padStart(2, '0')}`;
+          fetch(`/suggestion/${currentCity}/${selectedDateYYYYMMDD}`) // 都市名をURLに含める
+              .then(response => response.json())
+              .then(data => {
+               document.getElementById('clothing-suggestion').textContent = data.suggestion;
+             });
+        } else {
+          document.getElementById('clothing-suggestion').textContent = '日付を選択するとおすすめの服装が表示されます。';
+        }
+      }
+
+      function changeCity() {
+        currentCity = document.getElementById('city-select').value;
+        // ページをリロードして新しい都市の天気データを取得
+        window.location.href = `/?city=${currentCity}`;
+      }
+    </script>
+  </body>
+</html>
