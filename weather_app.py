@@ -128,7 +128,7 @@ def get_clothing_suggestion(city_name, date_str):
 
         if pops:
             avg_pop = sum(pops) / len(pops)
-            if avg_pop >= 0.4:  # 降水確率40%以上で傘が必要と判断
+            if avg_pop >= 0.5:  # 降水確率50%以上で傘が必要と判断
                 umbrella = " 傘をお持ちください!!!!"
 
             avg_temp = sum(item["main"]["temp"] for item in forecast_data["list"] if datetime.fromtimestamp(item["dt"]).strftime("%Y-%m-%d") == date_str) / len([item for item in forecast_data["list"] if datetime.fromtimestamp(item["dt"]).strftime("%Y-%m-%d") == date_str]) if [item for item in forecast_data["list"] if datetime.fromtimestamp(item["dt"]).strftime("%Y-%m-%d") == date_str] else 0
